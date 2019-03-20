@@ -1,0 +1,43 @@
+version: '2'
+services:
+  elasticsearch:
+    image: elasticsearch:5-alpine
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./elasticsearch/data:/usr/share/elasticsearch/data
+    environment:
+      - CLUSTER_NAME=elasticsearch
+      - ES_JAVA_OPTS=-Xms4g -Xmx4g
+
+  kibana:
+    image: kibana:5
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    depends_on:
+      - "elasticsearch"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    links:
+      - elasticsearch:host-elasticsearch
+    environment:
+      - ELASTICSEARCH_URL=http://host-elasticsearch:9200
+
+  fluent:
+    build:
+      context: fluent
+    container_name: fluent
+    ports:
+      - "162:162"
+    depends_on:
+      - "elasticsearch"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./fluent/etc/:/fluentd/etc/
+      - ./fluent/log/:/fluentd/log/
+    links:
+      - elasticsearch:host-elasticsearch
